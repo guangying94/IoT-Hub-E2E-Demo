@@ -1,0 +1,42 @@
+{
+    "name": "StreamAnalytics",
+    "startFile": "Transformation.asaql",
+    "configurations": [
+        {
+            "filePath": "JobConfig.json",
+            "subType": "JobConfig"
+        },
+        {
+            "filePath": "Outputs/pbi2.json",
+            "subType": "Output"
+        },
+        {
+            "filePath": "Outputs/powerbi.json",
+            "subType": "Output"
+        },
+        {
+            "filePath": "Outputs/sql-anomaly.json",
+            "subType": "Output"
+        },
+        {
+            "filePath": "Inputs/iotHub.json",
+            "subType": "Input"
+        },
+        {
+            "filePath": "Functions/aml-console.json",
+            "subType": "MLFunction"
+        },
+        {
+            "filePath": "Outputs/blob.json",
+            "subType": "Output"
+        },
+        {
+            "filePath": "Outputs/function-aml.json",
+            "subType": "Output"
+        },
+        {
+            "filePath": "Outputs/functions.json",
+            "subType": "Output"
+        }
+    ]
+}

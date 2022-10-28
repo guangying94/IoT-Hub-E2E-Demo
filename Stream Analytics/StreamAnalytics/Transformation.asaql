@@ -1,0 +1,68 @@
+--For anommaly to store in SQL
+WITH SmootheningStep AS
+(
+    SELECT
+        System.Timestamp as time,
+        AVG(CAST(temperature as float)) as temp,
+        AVG(CAST(humidity as float)) as humid,
+        MAX(CAST(revolution as bigint)) as rev
+    FROM [iotHub]
+    GROUP BY TUMBLINGWINDOW(second,1)
+),
+AnomalyDetectionStep AS
+(
+    SELECT
+        time,
+        temp,
+        humid,
+        rev,
+        AnomalyDetection_SpikeAndDip(temp, 80, 100, 'spikesanddips') OVER(LIMIT DURATION(minute,1)) as tempChangePointScores,
+        AnomalyDetection_SpikeAndDip(humid, 80, 100, 'spikesanddips') OVER(LIMIT DURATION(minute,1)) as humiChangePointScores,
+        AnomalyDetection_SpikeAndDip(rev, 80, 100, 'spikesanddips') OVER(LIMIT DURATION(second,30)) as revChangePointScores
+    FROM SmootheningStep
+)
+
+SELECT
+    temp as temperature,
+    humid as humidity,
+    rev as revolution,
+    time as saTimestamp,
+    CAST(GetRecordPropertyValue(tempChangePointScores, 'Score') as float) as tempAnomalyscore,
+    CAST(GetRecordPropertyValue(tempChangePointScores, 'IsAnomaly') as bigint) as isTempAnomaly,
+    CAST(GetRecordPropertyValue(humiChangePointScores, 'Score') as float) as humiAnomalyscore,
+    CAST(GetRecordPropertyValue(humiChangePointScores, 'IsAnomaly') as bigint) as isHumiAnomaly,
+    CAST(GetRecordPropertyValue(revChangePointScores, 'Score') as float) as revAnomalyscore,
+    CAST(GetRecordPropertyValue(revChangePointScores, 'IsAnomaly') as bigint) as isRevAnomaly
+INTO
+    [sql-anomaly]
+FROM AnomalyDetectionStep
+
+--For Power BI Streaming
+SELECT
+    temperature,
+    humidity,
+    revolution,
+    System.Timestamp time
+INTO
+    [powerbi]
+FROM
+    [iotHub]
+
+--For blob to store raw datapoints
+SELECT *
+INTO
+    [blob]
+FROM
+    [iotHub]
+
+--For Azure Function v2
+SELECT
+    AVG(CAST(temperature as float)) as temp,
+    AVG(CAST(humidity as float)) as humid,
+    MAX(CAST(revolution as bigint)) as rev,
+    'ConsoleSimulator' AS deviceName
+INTO 
+    [function-aml]
+FROM
+    [iotHub]
+ GROUP BY TUMBLINGWINDOW(second,5)
